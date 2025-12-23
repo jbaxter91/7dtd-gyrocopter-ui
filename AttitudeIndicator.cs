@@ -285,7 +285,7 @@ public class AttitudeUiConfig
 		int r = Mathf.Clamp(Mathf.RoundToInt(c.r * 255f), 0, 255);
 		int g = Mathf.Clamp(Mathf.RoundToInt(c.g * 255f), 0, 255);
 		int b = Mathf.Clamp(Mathf.RoundToInt(c.b * 255f), 0, 255);
-		int a = Mathf.Clamp(Mathf.RoundToInt(c.a * 255f), 0, 255);
+			// AttitudeIndicator main mod logic (tools directory fully removed)
 		return $"#{r:X2}{g:X2}{b:X2}{a:X2}";
 	}
 	public Color BaseColor = new Color(0.1f, 0.9f, 0.1f, 0.85f);
