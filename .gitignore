@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.swp
+*.tmp
+*.log
+*.pdb
+*.cache
+*.ide
+Mod/AttitudeIndicator/*.dll
