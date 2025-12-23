@@ -11,3 +11,4 @@ obj/
 *.cache
 *.ide
 Mod/AttitudeIndicator/*.dll
+tools/

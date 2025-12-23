@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ModInfo>
-  <Name value="" />
-  <DisplayName value="" />
+  <Name value="AttitudeIndicator" />
+  <DisplayName value="Attitude Indicator" />
   <Version value="1.0.0" />
-  <Description value="" />
+  <Description value="Shows gyrocopter pitch and attitude gauge while piloting." />
   <Author value="Beefy Nugget" />
 </ModInfo>
