@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AttitudeIndicatorConfig>
+  <Scale value="1.0" />
+  <OffsetX value="0" />
+  <OffsetY value="0" />
+  <BgColor value="#0000008C" />
+  <BaseColor value="#1AE61AD9" />
+  <LevelColor value="#3399E6E6" />
+  <FontColor value="#00FFFFFF" />
+  <FontSize value="18" />
+  <ShowText value="true" />
+</AttitudeIndicatorConfig>

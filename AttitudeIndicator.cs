@@ -50,6 +50,9 @@ public class AttitudeIndicatorBehaviour : MonoBehaviour
 		DontDestroyOnLoad(go);
 		_instance = go.AddComponent<AttitudeIndicatorBehaviour>();
 		UnityEngine.Debug.Log("[AttitudeIndicator] Behaviour singleton created");
+
+		// Load config on startup
+		AttitudeUiConfig.LoadFromFile();
 	}
 
 	private void Awake()
@@ -198,6 +201,12 @@ public class AttitudeIndicatorBehaviour : MonoBehaviour
 		{
 			_instance._labelStyle = null;
 		}
+		try {
+			AttitudeUiConfig.SaveToFile();
+			UnityEngine.Debug.Log("[AttitudeIndicator] Config saved to file.");
+		} catch (Exception ex) {
+			UnityEngine.Debug.Log($"[AttitudeIndicator] Config save failed: {ex.Message}");
+		}
 	}
 }
 
@@ -207,11 +216,145 @@ public class AttitudeUiConfig
 	public float OffsetX = 0f;
 	public float OffsetY = 0f;
 	public Color BgColor = new Color(0f, 0f, 0f, 0.55f);
+	// ...existing code...
+
+	public static void SaveToFile()
+	{
+		// Fix: Use correct Mods folder and ensure directory exists
+		var baseDir = System.IO.Directory.GetCurrentDirectory();
+		var configDir = System.IO.Path.Combine(baseDir, "Mods", "AttitudeIndicator");
+		var path = System.IO.Path.Combine(configDir, "config.xml");
+		if (!System.IO.Directory.Exists(configDir))
+		{
+			System.IO.Directory.CreateDirectory(configDir);
+		}
+		var doc = new System.Xml.Linq.XDocument(
+			new System.Xml.Linq.XElement("AttitudeIndicatorConfig",
+				new System.Xml.Linq.XElement("Scale", new System.Xml.Linq.XAttribute("value", AttitudeIndicatorBehaviour.Config.Scale.ToString(CultureInfo.InvariantCulture))),
+				new System.Xml.Linq.XElement("OffsetX", new System.Xml.Linq.XAttribute("value", AttitudeIndicatorBehaviour.Config.OffsetX.ToString(CultureInfo.InvariantCulture))),
+				new System.Xml.Linq.XElement("OffsetY", new System.Xml.Linq.XAttribute("value", AttitudeIndicatorBehaviour.Config.OffsetY.ToString(CultureInfo.InvariantCulture))),
+				new System.Xml.Linq.XElement("BgColor", new System.Xml.Linq.XAttribute("value", ColorToHex(AttitudeIndicatorBehaviour.Config.BgColor))),
+				new System.Xml.Linq.XElement("BaseColor", new System.Xml.Linq.XAttribute("value", ColorToHex(AttitudeIndicatorBehaviour.Config.BaseColor))),
+				new System.Xml.Linq.XElement("LevelColor", new System.Xml.Linq.XAttribute("value", ColorToHex(AttitudeIndicatorBehaviour.Config.LevelColor))),
+				new System.Xml.Linq.XElement("FontColor", new System.Xml.Linq.XAttribute("value", ColorToHex(AttitudeIndicatorBehaviour.Config.FontColor))),
+				new System.Xml.Linq.XElement("FontSize", new System.Xml.Linq.XAttribute("value", AttitudeIndicatorBehaviour.Config.FontSize.ToString(CultureInfo.InvariantCulture))),
+				new System.Xml.Linq.XElement("ShowText", new System.Xml.Linq.XAttribute("value", AttitudeIndicatorBehaviour.Config.ShowText ? "true" : "false"))
+			)
+		);
+		doc.Save(path);
+	}
+
+	public static bool TryParseHexColor(string input, out Color color)
+	{
+		color = Color.white;
+		if (string.IsNullOrEmpty(input))
+		{
+			return false;
+		}
+		string hex = input.Trim();
+		if (hex.StartsWith("#"))
+		{
+			hex = hex.Substring(1);
+		}
+		if (hex.Length != 6 && hex.Length != 8)
+		{
+			return false;
+		}
+		try
+		{
+			byte r = byte.Parse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+			byte g = byte.Parse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+			byte b = byte.Parse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+			byte a = 255;
+			if (hex.Length == 8)
+			{
+				a = byte.Parse(hex.Substring(6, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+			}
+			color = new Color(r / 255f, g / 255f, b / 255f, a / 255f);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+
+	private static string ColorToHex(Color c)
+	{
+		int r = Mathf.Clamp(Mathf.RoundToInt(c.r * 255f), 0, 255);
+		int g = Mathf.Clamp(Mathf.RoundToInt(c.g * 255f), 0, 255);
+		int b = Mathf.Clamp(Mathf.RoundToInt(c.b * 255f), 0, 255);
+		int a = Mathf.Clamp(Mathf.RoundToInt(c.a * 255f), 0, 255);
+		return $"#{r:X2}{g:X2}{b:X2}{a:X2}";
+	}
 	public Color BaseColor = new Color(0.1f, 0.9f, 0.1f, 0.85f);
 	public Color LevelColor = new Color(0.2f, 0.6f, 1f, 0.9f);
 	public Color FontColor = Color.cyan;
 	public int FontSize = 18;
 	public bool ShowText = true;
+
+	private static readonly string ConfigPath = "Mod/AttitudeIndicator/config.xml";
+
+	public static void LoadFromFile()
+	{
+		try
+		{
+			var path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), ConfigPath);
+			if (!System.IO.File.Exists(path)) return;
+			var xml = System.Xml.Linq.XDocument.Load(path);
+			var root = xml.Element("AttitudeIndicatorConfig");
+			if (root == null) return;
+
+			foreach (var el in root.Elements())
+			{
+				var val = el.Attribute("value")?.Value;
+				if (string.IsNullOrEmpty(val)) continue;
+				switch (el.Name.LocalName.ToLowerInvariant())
+				{
+					case "scale":
+						if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float scale))
+							AttitudeIndicatorBehaviour.Config.Scale = scale;
+						break;
+					case "offsetx":
+						if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float ox))
+							AttitudeIndicatorBehaviour.Config.OffsetX = ox;
+						break;
+					case "offsety":
+						if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float oy))
+							AttitudeIndicatorBehaviour.Config.OffsetY = oy;
+						break;
+					case "bgcolor":
+						if (TryParseHexColor(val, out Color bg))
+							AttitudeIndicatorBehaviour.Config.BgColor = bg;
+						break;
+					case "basecolor":
+						if (TryParseHexColor(val, out Color bc))
+							AttitudeIndicatorBehaviour.Config.BaseColor = bc;
+						break;
+					case "levelcolor":
+						if (TryParseHexColor(val, out Color lc))
+							AttitudeIndicatorBehaviour.Config.LevelColor = lc;
+						break;
+					case "fontcolor":
+						if (TryParseHexColor(val, out Color fc))
+							AttitudeIndicatorBehaviour.Config.FontColor = fc;
+						break;
+					case "fontsize":
+						if (int.TryParse(val, NumberStyles.Integer, CultureInfo.InvariantCulture, out int fs))
+							AttitudeIndicatorBehaviour.Config.FontSize = fs;
+						break;
+					case "showtext":
+						AttitudeIndicatorBehaviour.Config.ShowText = val.ToLowerInvariant() == "true" || val == "1";
+						break;
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			UnityEngine.Debug.Log($"[AttitudeIndicator] Config load error: {ex.Message}");
+		}
+	}
 }
 
 public class ConsoleCmdAttitudeUi : ConsoleCmdAbstract
